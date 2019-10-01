@@ -1,34 +1,33 @@
-node{
-    def imgVersion = UUID.randomUUID().toString()
-    def dockerImage = "kammana/nodeapp-6pm:${imgVersion}"
-    stage('Source Checkout'){
+node {
+    def app
+
+    stage('Clone repository') {
+        /* Cloning the Repository to our Workspace */
+
+        checkout scm
+    }
+
+    stage('Build image') {
+        /* This builds the actual image */
+
+        app = docker.build("rahul9100/nodeapp")
+    }
+
+    stage('Test image') {
         
-        git 'https://github.com/rahul9100/node-app'
+        app.inside {
+            echo "Tests passed"
+        }
     }
-    
-    
-    stage('Build Docker Image'){
-        sh "docker build -t ${dockerImage} ."
+
+    stage('Push image') {
+        /* 
+			You would need to first register with DockerHub before you can push images to your account
+		*/
+        docker.withRegistry('https://registry.hub.docker.com', 'rahulkumar') {
+            app.push("${env.BUILD_NUMBER}")
+            app.push("latest")
+            } 
+                echo "Trying to Push Docker Build to DockerHub"
     }
-    
-    stage('Push DockerHub'){
-		withCredentials([string(credentialsId: 'rahulkumar', variable: 'dockerhubPwd')]) {
-			sh "docker login -u kammana -p ${dockerhubPwd}"
-		}
-        
-        sh "docker push ${dockerImage}"
-    }
-    
-	stage('Dev Deploy'){
-		def dockerRun = "docker run -d -p 8080:8080 --name nodeapp ${dockerImage}"
-		sshagent(['dev-docker']) {
-		    try{
-				sh "ssh -o StrictHostKeyChecking=no ec2-user@13.127.166.0 docker rm -f nodeapp "
-			}catch(e){
-			
-			
-			}
-			sh "ssh  ec2-user@13.127.166.0 ${dockerRun}"
-		}
-	}
 }
