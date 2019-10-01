@@ -3,7 +3,7 @@ node{
     def dockerImage = "kammana/nodeapp-6pm:${imgVersion}"
     stage('Source Checkout'){
         
-        git 'https://github.com/javahometech/node-app'
+        git 'https://github.com/rahul9100/node-app'
     }
     
     
